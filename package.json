@@ -2,6 +2,7 @@
   "name": "upwork2tg",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "dev": "nodemon --config nodemon.json",
     "build": "tsc",
@@ -15,12 +16,19 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@eslint/js": "^9.26.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-prettier": "^5.4.0",
     "mongodb": "^6.16.0",
     "puppeteer": "^24.8.2",
-    "telegraf": "^4.16.3"
+    "telegraf": "^4.16.3",
+    "typescript-eslint": "^8.32.1"
   },
   "devDependencies": {
     "@types/node": "^22.15.17",
+    "@typescript-eslint/eslint-plugin": "^8.32.1",
+    "@typescript-eslint/parser": "^8.32.1",
+    "eslint": "^9.26.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }
