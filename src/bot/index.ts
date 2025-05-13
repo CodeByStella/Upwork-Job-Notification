@@ -1,6 +1,7 @@
+import config from "@/config";
 import { Telegraf } from "telegraf";
 
-const bot = new Telegraf("<YOUR_BOT_TOKEN>");
+const bot = new Telegraf(config.BOT_TOKEN);
 
 bot.start((ctx) => {
   ctx.reply("Welcome!", {
@@ -15,4 +16,10 @@ bot.start((ctx) => {
   });
 });
 
-bot.launch();
+export const launchBot = async () => {
+  return new Promise((resolve) => {
+    bot.launch(() => {
+      resolve("Bot started");
+    });
+  });
+};

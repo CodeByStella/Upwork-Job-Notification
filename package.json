@@ -4,7 +4,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon --config nodemon.json",
+    "dev": "nodemon --watch src --ext ts,js --exec tsx src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -17,11 +17,18 @@
   "description": "",
   "dependencies": {
     "@eslint/js": "^9.26.0",
+    "dotenv": "^16.5.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.4.0",
     "mongodb": "^6.16.0",
+    "nodemon": "^3.1.10",
     "puppeteer": "^24.8.2",
+    "puppeteer-core": "^24.8.2",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-recaptcha": "^3.6.8",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "telegraf": "^4.16.3",
+    "tsx": "^4.19.4",
     "typescript-eslint": "^8.32.1"
   },
   "devDependencies": {
