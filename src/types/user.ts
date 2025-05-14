@@ -7,8 +7,7 @@ interface UserType {
   created: Date;
   isPremium: boolean;
   searchUrl: string;
-  referral: string;
-  invited_by: string;
+  notification: boolean;
 }
 
 export default UserType;

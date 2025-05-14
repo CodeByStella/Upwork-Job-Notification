@@ -1,9 +1,11 @@
 import config from "@/config";
 import buttonTexts from "@/constant/buttons";
+import helpText from "@/constant/help";
 import User from "@/models/User";
 import UserType from "@/types/user";
 import { formatDate, isEmpty } from "@/utils";
 import { Markup, Telegraf } from "telegraf";
+import { SceneName } from "./scene";
 
 const commands: {
   command: string;
@@ -23,7 +25,7 @@ const {
   STOP_NOTIFICATION,
   GET_SUBSCRIPTION_STATUS,
   SUBSCRIBE,
-  GET_REFERRAL_LINK,
+  SOURCE_URL,
 } = buttonTexts;
 
 const setup_commands = async (bot: Telegraf) => {
@@ -55,7 +57,7 @@ const setup_commands = async (bot: Telegraf) => {
           parse_mode: "Markdown",
           ...Markup.keyboard([
             [START_TRIAL, SUBSCRIBE],
-            [GET_REFERRAL_LINK, HELP],
+            [HELP, SOURCE_URL],
           ])
             .resize()
             .oneTime(),
@@ -69,7 +71,7 @@ const setup_commands = async (bot: Telegraf) => {
           ...Markup.keyboard([
             [CONFIG_JOB_LIST, GET_SUBSCRIPTION_STATUS],
             [START_NOTIFICATION, STOP_NOTIFICATION],
-            [GET_REFERRAL_LINK, HELP],
+            [HELP, SOURCE_URL],
           ])
             .resize()
             .oneTime(),
@@ -108,13 +110,13 @@ const setup_commands = async (bot: Telegraf) => {
       else if (user.trialUsed) OutdatedUsers++;
     });
 
-    const header = `🟢 *Current Status*\n\n Total: 🧮x${users.length}   Premium: 💎x${premiumUsers} Trial: 🧪x${trialUsers}  Ended: 🟡x${OutdatedUsers}\n --------------------------------------------------------------------------------\n`;
+    const header = `🟢 *Current Status*\n\n Total:🧮x${users.length}   Premium:💎x${premiumUsers}   Trial:🧪x${trialUsers}   Ended:🟡x${OutdatedUsers}\n --------------------------------------------------------------------------------\n`;
 
     const messages = [];
     let currentChunk = header;
 
     users.forEach((user) => {
-      const line = `${formatDate(user.created)} - @${user.username} ${
+      const line = `${user.notification ? "🟢" : "🔴"}${formatDate(user.created)} - @${user.username} ${
         user.isPremium ? "💎" : user.isTrial ? "🧪" : user.trialUsed ? "🟡" : ""
       }\n`;
 
@@ -130,6 +132,149 @@ const setup_commands = async (bot: Telegraf) => {
 
     for (const msg of messages) {
       await ctx.reply(msg, { parse_mode: "Markdown" });
+    }
+  });
+
+  bot.hears(SOURCE_URL, async (ctx) => {
+    ctx.reply(
+      `${config.SOURCE_URL}\n*Please give me a star to repository.* ⭐️`,
+      {
+        parse_mode: "Markdown",
+      },
+    );
+  });
+
+  bot.hears(HELP, async (ctx) => {
+    ctx.reply(helpText, { parse_mode: "Markdown" });
+  });
+
+  bot.hears(START_TRIAL, async (ctx) => {
+    const userId = ctx.update.message.from.id;
+    const user = await User.findOne({ id: userId });
+    if (user) {
+      if (user.isPremium) {
+        return ctx.reply(`You are already using premium plan.💎`);
+      }
+      if (user.isTrial) {
+        return ctx.reply(`You are already using trial plan.🧪`);
+      }
+      if (user.trialUsed) {
+        return ctx.reply(`Your trial plan has been expired.🟡`);
+      }
+
+      user.isTrial = true;
+      user.subscribed = new Date();
+      await user.save();
+      ctx.reply(`Your trial has started. You have 3 days to use it.`, {
+        parse_mode: "Markdown",
+        ...Markup.keyboard([
+          [CONFIG_JOB_LIST, GET_SUBSCRIPTION_STATUS],
+          [START_NOTIFICATION, STOP_NOTIFICATION],
+          [HELP, SOURCE_URL],
+        ])
+          .resize()
+          .oneTime(),
+      });
+    } else {
+      ctx.reply(`User not found`);
+    }
+  });
+
+  bot.hears(SUBSCRIBE, async (ctx) => {
+    const userId = ctx.update.message.from.id;
+    const user = await User.findOne({ id: userId });
+
+    if (user && user.isPremium)
+      return ctx.reply(`You are already using premium plan.💎`);
+
+    ctx.replyWithInvoice({
+      title: "Upwork Job Notification Subscription for 1 month",
+      description:
+        "Get instant job notifications tailored to you. Be the first to apply, maximize your chances, and win more contracts! Customize alerts.\nActive fast.",
+      payload: "premium_sub_1m",
+      provider_token: "", // Leave empty for Telegram Stars
+      currency: "XTR",
+      prices: [{ label: "1 Month", amount: 1 }], // 1 Star = $1
+    });
+  });
+  bot.on("pre_checkout_query", (ctx) => ctx.answerPreCheckoutQuery(true));
+  bot.on("successful_payment", async (ctx) => {
+    ctx.reply(
+      "Thank you for your purchase!\nYou can use the bot for *one month* from now.",
+      {
+        parse_mode: "Markdown",
+      },
+    );
+
+    const userId = ctx.update.message.from.id;
+    const user = await User.findOne({ id: userId });
+
+    if (user) {
+      user.isPremium = true;
+      user.subscribed = new Date();
+      user.isTrial = false;
+      user.trialUsed = true;
+
+      await user.save();
+    }
+  });
+
+  bot.hears(START_NOTIFICATION, async (ctx) => {
+    const userId = ctx.update.message.from.id;
+    const user = await User.findOne({ id: userId });
+
+    if (user?.isPremium || user?.isTrial) {
+      user.notification = true;
+
+      await user.save();
+      await ctx.reply("Notifications are enabled.🟢", {
+        parse_mode: "Markdown",
+      });
+    } else {
+      await ctx.reply("Please subscribe a plan first.⚠️", {
+        parse_mode: "Markdown",
+      });
+    }
+  });
+
+  bot.hears(STOP_NOTIFICATION, async (ctx) => {
+    const userId = ctx.update.message.from.id;
+    const user = await User.findOne({ id: userId });
+
+    if (user) {
+      user.notification = false;
+      await user.save();
+      await ctx.reply("Notifications are disabled.🔴", {
+        parse_mode: "Markdown",
+      });
+    }
+  });
+
+  bot.hears(GET_SUBSCRIPTION_STATUS, async (ctx) => {
+    const userId = ctx.update.message.from.id;
+    const user = await User.findOne({ id: userId });
+
+    if (user) {
+      await ctx.reply(
+        `*Your subscription status*\n\n${user.isPremium ? "Premium 💎" : user.isTrial ? "Trial 🧪" : "No Subscription"}\n${user.notification ? "Notifications are enabled.🟢" : "Notifications are disabled.🔴"}${user.isPremium ? `\nSubscribed on ${formatDate(user.subscribed)}` : ""}\nConfig URL: ${user.searchUrl || "Not set"}
+        `,
+        {
+          parse_mode: "Markdown",
+        },
+      );
+    }
+  });
+
+  bot.hears(CONFIG_JOB_LIST, async (ctx: any) => {
+    const userId = ctx.update.message.from.id;
+    const user = await User.findOne({ id: userId });
+
+    if (user?.isPremium || user?.isTrial) {
+      ctx.scene.enter(SceneName);
+    } else {
+      await ctx.reply("Please subscribe a plan first.⚠️", {
+        parse_mode: "Markdown",
+      });
     }
   });
 };

@@ -1,5 +1,4 @@
 import UserType from "@/types/user";
-import { getRndId } from "@/utils";
 import mongoose from "mongoose";
 
 const UserSchema = new mongoose.Schema({
@@ -31,15 +30,11 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
-  referral: {
-    type: String,
-    default: getRndId,
-  },
-  invited_by: {
-    type: String,
-    default: "",
-  },
   trialUsed: {
+    type: Boolean,
+    default: false,
+  },
+  notification: {
     type: Boolean,
     default: false,
   },
