@@ -103,8 +103,10 @@ async function login(page: PageWithCursor) {
 
 export async function scrapeJobs() {
   const { page } = await useRealBrowser();
-  await page.setViewport({ width: 920, height: 860 });
+  await page.setViewport({ width: 1220, height: 860 });
   await login(page);
+
+  await delay(20000);
 
   const searchUrls = [
     `https://www.upwork.com/nx/search/jobs/?amount=10-3000&category2_uid=531770282580668419,531770282580668418&hourly_rate=15-40&payment_verified=1&per_page=50&q=%28Scrap%20OR%20Bet%20OR%20Casino%20OR%20Sportsbook%20OR%20Next.js%20OR%20React%20OR%20Tailwind%20OR%20Node.js%20OR%20ExpressJS%20OR%20MongoDB%20OR%20Firebase%20OR%20OpenAI%20OR%20Ether.js%20OR%20Website%20OR%20Telegram%20OR%20Bot%20OR%20Smart%20OR%20Contract%20OR%20Blockchain%20OR%20Full%20OR%20stack%20OR%20EVM%29%20AND%20NOT%20%28Wordpress%20OR%20Copywriting%20OR%20Vue%20OR%20Shopify%29&sort=recency&t=0,1`,
@@ -112,7 +114,10 @@ export async function scrapeJobs() {
 
   for (let index = 0; index < searchUrls.length; index++) {
     const searchUrl = searchUrls[index];
-    await page.goto(searchUrl, { waitUntil: "domcontentloaded" });
+    await page.goto(searchUrl, {
+      waitUntil: "domcontentloaded",
+      timeout: 20000,
+    });
     const MAX_RETRIES = 20;
     let jobs = [];
     let pageTitle = "";
@@ -123,11 +128,7 @@ export async function scrapeJobs() {
       console.log(`📝 Checking Page Title: ${pageTitle}`);
       await delay(1000);
     }
-
     console.log(`✅ Correct page title found: ${pageTitle}`);
-
-    //Take a screenshot
-    await page.screenshot({ path: "page.png" });
 
     //After page title is found, try to scrape with retries
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {

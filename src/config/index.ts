@@ -2,10 +2,67 @@ import { configDotenv } from "dotenv";
 
 configDotenv();
 
-export default {
-  PORT: process.env.PORT || 5000,
-  BOT_TOKEN: process.env.BOT_TOKEN || "default_bot_token",
-  MONGODB_URI: process.env.MONGODB_URI || "mongodb://localhost:27017/upwork2tg",
-  EMAIL: process.env.ACCOUNT_EMAIL || "default_email@example.com",
-  PASSWORD: process.env.UPWORK_PASSWORD || "default_password",
+const PORT = process.env.PORT || "5000";
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const MONGODB_URI = process.env.MONGODB_URI;
+const EMAIL = process.env.ACCOUNT_EMAIL;
+const PASSWORD = process.env.UPWORK_PASSWORD;
+const ADMIN_ID = process.env.ADMIN_ID;
+const SUPPORT = process.env.SUPPORT;
+
+let config_missing = false;
+
+if (!BOT_TOKEN) {
+  console.error("Missing BOT_TOKEN");
+  config_missing = true;
+}
+
+if (!MONGODB_URI) {
+  console.error("Missing MONGODB_URI");
+  config_missing = true;
+}
+
+if (!EMAIL) {
+  console.error("Missing EMAIL");
+  config_missing = true;
+}
+
+if (!PASSWORD) {
+  console.error("Missing PASSWORD");
+  config_missing = true;
+}
+
+if (!ADMIN_ID) {
+  console.error("Missing ADMIN_ID");
+  config_missing = true;
+}
+if (!SUPPORT) {
+  console.error("Missing SUPPORT");
+  config_missing = true;
+}
+
+if (config_missing) {
+  process.exit(1);
+}
+
+interface Config {
+  PORT: number;
+  BOT_TOKEN: string;
+  MONGODB_URI: string;
+  EMAIL: string;
+  PASSWORD: string;
+  ADMIN_ID: string;
+  SUPPORT: string;
+}
+
+const config: Config = {
+  PORT: Number(PORT),
+  BOT_TOKEN: BOT_TOKEN!,
+  MONGODB_URI: MONGODB_URI!,
+  EMAIL: EMAIL!,
+  PASSWORD: PASSWORD!,
+  ADMIN_ID: ADMIN_ID!,
+  SUPPORT: SUPPORT!,
 };
+
+export default config;
