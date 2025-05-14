@@ -1,13 +1,17 @@
 interface JobType {
   id: string;
+  userid: string;
+  created: Date;
+}
+
+export interface ScrapedJobType {
+  id: string;
   title: string;
-  published: string;
+  date: string;
   info: string;
   description: string;
   url: string;
   apply: string;
-  userid: string;
-  created: Date;
 }
 
 export default JobType;

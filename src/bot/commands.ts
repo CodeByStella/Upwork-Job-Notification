@@ -194,7 +194,7 @@ const setup_commands = async (bot: Telegraf) => {
       payload: "premium_sub_1m",
       provider_token: "", // Leave empty for Telegram Stars
       currency: "XTR",
-      prices: [{ label: "1 Month", amount: 1 }], // 1 Star = $1
+      prices: [{ label: "1 Month", amount: 100 }], // 1 Star = $100
     });
   });
   bot.on("pre_checkout_query", (ctx) => ctx.answerPreCheckoutQuery(true));
