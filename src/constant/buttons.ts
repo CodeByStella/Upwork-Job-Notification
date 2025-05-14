@@ -1,11 +1,11 @@
 const buttonTexts = {
-  START_TRIAL: "Start Trial (3D)",
+  START_TRIAL: "Start Trial (3 Days)",
   SUBSCRIBE: "Subscribe",
   CONFIG_JOB_LIST: "Configure Feed",
   START_NOTIFICATION: "Start Notification",
   STOP_NOTIFICATION: "Stop Notification",
   GET_SUBSCRIPTION_STATUS: "Get Status",
-  GET_REFERRAL_LINK: "Invite Link",
+  SOURCE_URL: "Source Code",
   HELP: "Get Help",
 };
 

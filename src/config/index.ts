@@ -9,6 +9,7 @@ const EMAIL = process.env.ACCOUNT_EMAIL;
 const PASSWORD = process.env.UPWORK_PASSWORD;
 const ADMIN_ID = process.env.ADMIN_ID;
 const SUPPORT = process.env.SUPPORT;
+const SOURCE_URL = process.env.GITHUB_URL || "";
 
 let config_missing = false;
 
@@ -53,6 +54,7 @@ interface Config {
   PASSWORD: string;
   ADMIN_ID: string;
   SUPPORT: string;
+  SOURCE_URL: string;
 }
 
 const config: Config = {
@@ -63,6 +65,7 @@ const config: Config = {
   PASSWORD: PASSWORD!,
   ADMIN_ID: ADMIN_ID!,
   SUPPORT: SUPPORT!,
+  SOURCE_URL: SOURCE_URL!,
 };
 
 export default config;
