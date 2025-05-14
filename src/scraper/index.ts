@@ -1,6 +1,8 @@
-import { delay } from "@/utils";
+import { delay, isEmpty } from "@/utils";
 import { connect, PageWithCursor } from "puppeteer-real-browser";
 import config from "@/config";
+import processScrapedJob from "@/job.controller";
+import User from "@/models/User";
 
 const useRealBrowser = async () => {
   const { browser, page } = await connect({
@@ -108,119 +110,128 @@ export async function scrapeJobs() {
 
   await delay(20000);
 
-  const searchUrls = [
-    `https://www.upwork.com/nx/search/jobs/?amount=10-3000&category2_uid=531770282580668419,531770282580668418&hourly_rate=15-40&payment_verified=1&per_page=50&q=%28Scrap%20OR%20Bet%20OR%20Casino%20OR%20Sportsbook%20OR%20Next.js%20OR%20React%20OR%20Tailwind%20OR%20Node.js%20OR%20ExpressJS%20OR%20MongoDB%20OR%20Firebase%20OR%20OpenAI%20OR%20Ether.js%20OR%20Website%20OR%20Telegram%20OR%20Bot%20OR%20Smart%20OR%20Contract%20OR%20Blockchain%20OR%20Full%20OR%20stack%20OR%20EVM%29%20AND%20NOT%20%28Wordpress%20OR%20Copywriting%20OR%20Vue%20OR%20Shopify%29&sort=recency&t=0,1`,
-  ];
+  while (true) {
+    const subscribedUsers = await User.find({
+      $or: [{ isPremium: true }, { isTrial: true }],
+      notification: true,
+    }).lean();
 
-  for (let index = 0; index < searchUrls.length; index++) {
-    const searchUrl = searchUrls[index];
-    await page.goto(searchUrl, {
-      waitUntil: "domcontentloaded",
-      timeout: 20000,
-    });
-    const MAX_RETRIES = 20;
-    let jobs = [];
-    let pageTitle = "";
+    for (let index = 0; index < subscribedUsers.length; index++) {
+      const searchUrl = subscribedUsers[index].searchUrl || "";
+      const userid = subscribedUsers[index].id;
 
-    //We detect page load by checking page title(Must start with "Upwork -")
-    while (!pageTitle.startsWith("Upwork")) {
-      pageTitle = await page.title();
-      console.log(`📝 Checking Page Title: ${pageTitle}`);
-      await delay(1000);
-    }
-    console.log(`✅ Correct page title found: ${pageTitle}`);
+      console.log(searchUrl);
 
-    //After page title is found, try to scrape with retries
-    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-      try {
-        const inputExists = await page.$(
-          '[data-test="UpCInput"] input[type="search"]',
-        );
-        if (!inputExists) {
-          console.log(
-            `🔄 Waiting for search input... (${attempt + 1}/${MAX_RETRIES})`,
+      if (isEmpty(searchUrl)) continue;
+
+      await page.goto(searchUrl, {
+        waitUntil: "domcontentloaded",
+        timeout: 20000,
+      });
+      const MAX_RETRIES = 20;
+      let jobs = [];
+      let pageTitle = "";
+
+      //We detect page load by checking page title(Must start with "Upwork -")
+      while (!pageTitle.startsWith("Upwork")) {
+        pageTitle = await page.title();
+        console.log(`📝 Checking Page Title: ${pageTitle}`);
+        await delay(1000);
+      }
+      console.log(`✅ Correct page title found: ${pageTitle}`);
+
+      //After page title is found, try to scrape with retries
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+          const inputExists = await page.$(
+            '[data-test="UpCInput"] input[type="search"]',
           );
-          await delay(1000);
-          continue;
-        }
+          if (!inputExists) {
+            console.log(
+              `🔄 Waiting for search input... (${attempt + 1}/${MAX_RETRIES})`,
+            );
+            await delay(1000);
+            continue;
+          }
 
-        const jobTiles = await page.$$(
-          '[data-test="job-tile-title-link UpLink"]',
-        );
-        if (jobTiles.length === 0) {
-          console.log(
-            `🕵️ Waiting for job tiles... (${attempt + 1}/${MAX_RETRIES})`,
+          const jobTiles = await page.$$(
+            '[data-test="job-tile-title-link UpLink"]',
           );
-          await delay(1000);
-          continue;
-        }
-
-        jobs = await page.evaluate(() => {
-          const jobCards = document.querySelectorAll('[data-test="JobTile"]');
-          const results: any[] = [];
-
-          jobCards.forEach((card) => {
-            const titleEl = card.querySelector(
-              '[data-test="job-tile-title-link UpLink"]',
+          if (jobTiles.length === 0) {
+            console.log(
+              `🕵️ Waiting for job tiles... (${attempt + 1}/${MAX_RETRIES})`,
             );
-            const title = titleEl?.textContent?.trim() || "";
-            const url = titleEl
-              ? `https://www.upwork.com${titleEl.getAttribute("href")}`
-              : "";
+            await delay(1000);
+            continue;
+          }
 
-            const id = url.match(/~\w+/)?.[0];
+          jobs = await page.evaluate(() => {
+            const jobCards = document.querySelectorAll('[data-test="JobTile"]');
+            const results: any[] = [];
 
-            const apply = id
-              ? `https://www.upwork.com/nx/proposals/job/${id}/apply/`
-              : "";
+            jobCards.forEach((card) => {
+              const titleEl = card.querySelector(
+                '[data-test="job-tile-title-link UpLink"]',
+              );
+              const title = titleEl?.textContent?.trim() || "";
+              const url = titleEl
+                ? `https://www.upwork.com${titleEl.getAttribute("href")}`
+                : "";
 
-            // ✅ FIX: Avoid global ID — use nested lookup instead
-            const descWrapper = card.querySelector(
-              '[data-test="UpCLineClamp JobDescription"]',
-            );
+              const id = url.match(/~\w+/)?.[0];
 
-            const paragraph = descWrapper?.querySelector("p");
-            const description = paragraph?.textContent?.trim() || "";
+              const apply = id
+                ? `https://www.upwork.com/nx/proposals/job/${id}/apply/`
+                : "";
 
-            const date =
-              card
-                .querySelector(`[data-test="job-pubilshed-date"]`)
-                ?.textContent?.trim() || "";
+              // ✅ FIX: Avoid global ID — use nested lookup instead
+              const descWrapper = card.querySelector(
+                '[data-test="UpCLineClamp JobDescription"]',
+              );
 
-            const info =
-              card
-                .querySelector(`[data-test="JobInfo"]`)
-                ?.textContent?.trim() || "";
+              const paragraph = descWrapper?.querySelector("p");
+              const description = paragraph?.textContent?.trim() || "";
 
-            results.push({
-              id,
-              title,
-              date,
-              info,
-              description,
-              url,
-              apply,
+              const date =
+                card
+                  .querySelector(`[data-test="job-pubilshed-date"]`)
+                  ?.textContent?.trim() || "";
+
+              const info =
+                card
+                  .querySelector(`[data-test="JobInfo"]`)
+                  ?.textContent?.trim() || "";
+
+              results.push({
+                id,
+                title,
+                date,
+                info,
+                description,
+                url,
+                apply,
+              });
             });
+
+            return results;
           });
 
-          return results;
-        });
-
-        break;
-      } catch (err) {
-        console.error(`⚠️ Error during scrape attempt ${attempt + 1}:`, err);
-        await delay(1000);
-        continue;
+          break;
+        } catch (err) {
+          console.error(`⚠️ Error during scrape attempt ${attempt + 1}:`, err);
+          continue;
+        }
       }
-    }
 
-    if (jobs.length === 0) {
-      console.log("❌ Failed to scrape jobs after multiple attempts.");
-    } else {
-      console.log("✅ Scraped jobs:", jobs);
-    }
+      if (jobs.length === 0) {
+        console.log("❌ Failed to scrape jobs after multiple attempts.");
+      } else {
+        console.log("✅ Scraped jobs:", jobs);
+      }
 
-    console.log("Scraped jobs:", jobs);
+      processScrapedJob(userid, jobs);
+      await delay(5000);
+    }
   }
 }
 
