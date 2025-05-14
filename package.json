@@ -21,6 +21,7 @@
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.4.0",
     "mongodb": "^6.16.0",
+    "mongoose": "^8.14.3",
     "nodemon": "^3.1.10",
     "puppeteer": "^24.8.2",
     "puppeteer-core": "^24.8.2",

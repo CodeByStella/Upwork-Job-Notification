@@ -1,7 +1,10 @@
 import { launchBot } from "./bot";
+import { connectDB } from "./db";
 import { startScraping } from "./scraper";
 
-launchBot().then((status) => {
+(async () => {
+  await connectDB();
+  const status = await launchBot();
   console.log(status);
-  startScraping(5000);
-});
+  // startScraping();
+})();
