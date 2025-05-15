@@ -29,32 +29,37 @@ const checkAndUpdateUsers = async ({
 };
 
 const startCronJob = () => {
-  cron.schedule("0 0 * * *", async () => {
-    console.log("Running daily user check at midnight");
+  cron.schedule(
+    "0 0 * * *",
+    async () => {
+      console.log("Running daily user check at midnight");
+      try {
+        const [trialUsers, premiumUsers] = await Promise.all([
+          User.find({ isTrial: true }),
+          User.find({ isPremium: true }),
+        ]);
 
-    try {
-      const [trialUsers, premiumUsers] = await Promise.all([
-        User.find({ isTrial: true }),
-        User.find({ isPremium: true }),
-      ]);
+        await checkAndUpdateUsers({
+          users: trialUsers,
+          maxDays: 3,
+          updateFields: { isTrial: false, trialUsed: true },
+          label: "Trial User",
+        });
 
-      await checkAndUpdateUsers({
-        users: trialUsers,
-        maxDays: 3,
-        updateFields: { isTrial: false, trialUsed: true },
-        label: "Trial User",
-      });
-
-      await checkAndUpdateUsers({
-        users: premiumUsers,
-        maxDays: 30,
-        updateFields: { isPremium: false, trialUsed: true },
-        label: "Premium User",
-      });
-    } catch (error) {
-      console.error("Cron job error:", error);
-    }
-  });
+        await checkAndUpdateUsers({
+          users: premiumUsers,
+          maxDays: 30,
+          updateFields: { isPremium: false, trialUsed: true },
+          label: "Premium User",
+        });
+      } catch (error) {
+        console.error("Cron job error:", error);
+      }
+    },
+    {
+      timezone: "Etc/UTC", // or your real timezone like "America/New_York"
+    },
+  );
 };
 
 export default startCronJob;

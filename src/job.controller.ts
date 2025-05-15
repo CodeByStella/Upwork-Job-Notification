@@ -11,7 +11,9 @@ const processScrapedJob = async (userid: string, jobs: ScrapedJobType[]) => {
       await Job.create({ userid, id: job.id });
       await sendMessage(
         userid,
-        `🔉*${job.title}*\n\n*${job.info}*\n\n*${job.date}*\n\n${job.description}\n\n[Apply Now](${job.url})    [Direct Apply](${job.apply})`,
+        `🔉 *${job.title}*\n\nℹ️ ${job.info}\nℹ️ ${job.date}\n\n📝📝📝📝\n${job.description}`,
+        job.url,
+        job.apply,
       );
     }
     await delay(200);
