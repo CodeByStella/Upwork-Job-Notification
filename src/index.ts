@@ -1,3 +1,4 @@
+import "module-alias/register";
 import { launchBot } from "./bot";
 import startCronJob from "./cronjob";
 import { connectDB } from "./db";

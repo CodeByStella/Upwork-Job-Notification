@@ -1,9 +1,10 @@
-import js from "@eslint/js";
-import globals from "globals";
-import tseslint from "typescript-eslint";
-import eslintPluginPrettier from "eslint-plugin-prettier/recommended";
+// eslint.config.js
+const js = require("@eslint/js");
+const globals = require("globals");
+const tseslint = require("typescript-eslint");
+const eslintPluginPrettier = require("eslint-plugin-prettier/recommended");
 
-export default tseslint
+module.exports = tseslint
   .config(
     { ignores: ["dist"] },
     {
