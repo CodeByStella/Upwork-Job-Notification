@@ -109,131 +109,153 @@ async function login(page: PageWithCursor) {
 }
 
 export async function scrapeJobs() {
-  const { page } = await useRealBrowser();
-  await page.setViewport({ width: 1220, height: 860 });
-  await login(page);
-
-  await delay(20000);
+  let iteration = 0;
+  const RESTART_BROWSER_EVERY = 10; // Restart browser every 10 cycles to avoid memory leaks
 
   while (true) {
-    const subscribedUsers = await User.find({
-      $or: [{ isPremium: true }, { isTrial: true }],
-      notification: true,
-    }).lean();
+    iteration++;
+    const { browser, page } = await useRealBrowser();
+    try {
+      await page.setViewport({ width: 1220, height: 860 });
+      await login(page);
 
-    for (let index = 0; index < subscribedUsers.length; index++) {
-      const searchUrl = subscribedUsers[index].searchUrl || "";
-      const userid = subscribedUsers[index].id;
+      await delay(20000);
 
-      if (isEmpty(searchUrl)) continue;
+      const subscribedUsers = await User.find({
+        $or: [{ isPremium: true }, { isTrial: true }],
+        notification: true,
+      }).lean();
 
-      await page.goto(searchUrl, {
-        waitUntil: "domcontentloaded",
-        timeout: 20000,
-      });
-      const MAX_RETRIES = 30;
-      let jobs = [];
-      let pageTitle = "";
+      for (let index = 0; index < subscribedUsers.length; index++) {
+        const searchUrl = subscribedUsers[index].searchUrl || "";
+        const userid = subscribedUsers[index].id;
 
-      //We detect page load by checking page title(Must start with "Upwork -")
-      while (!pageTitle.startsWith("Upwork")) {
-        pageTitle = await page.title();
-        console.log(`📝 Checking Page Title: ${pageTitle}`);
-        await delay(1000);
-      }
-      console.log(`✅ Correct page title found: ${pageTitle}`);
+        if (isEmpty(searchUrl)) continue;
 
-      //After page title is found, try to scrape with retries
-      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-        try {
-          const inputExists = await page.$(
-            '[data-test="UpCInput"] input[type="search"]',
-          );
-          if (!inputExists) {
-            console.log(
-              `🔄 Waiting for search input... (${attempt + 1}/${MAX_RETRIES})`,
+        await page.goto(searchUrl, {
+          waitUntil: "domcontentloaded",
+          timeout: 20000,
+        });
+        const MAX_RETRIES = 30;
+        let jobs = [];
+        let pageTitle = "";
+
+        //We detect page load by checking page title(Must start with "Upwork -")
+        while (!pageTitle.startsWith("Upwork")) {
+          pageTitle = await page.title();
+          console.log(`📝 Checking Page Title: ${pageTitle}`);
+          await delay(1000);
+        }
+        console.log(`✅ Correct page title found: ${pageTitle}`);
+
+        //After page title is found, try to scrape with retries
+        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+          try {
+            const inputExists = await page.$(
+              '[data-test="UpCInput"] input[type="search"]',
             );
-            await delay(1000);
-            continue;
-          }
+            if (!inputExists) {
+              console.log(
+                `🔄 Waiting for search input... (${attempt + 1}/${MAX_RETRIES})`,
+              );
+              await delay(1000);
+              continue;
+            }
 
-          const jobTiles = await page.$$(
-            '[data-test="job-tile-title-link UpLink"]',
-          );
-          if (jobTiles.length === 0) {
-            console.log(
-              `🕵️ Waiting for job tiles... (${attempt + 1}/${MAX_RETRIES})`,
+            const jobTiles = await page.$$(
+              '[data-test="job-tile-title-link UpLink"]',
             );
-            await delay(1000);
-            continue;
-          }
-
-          jobs = await page.evaluate(() => {
-            const jobCards = document.querySelectorAll('[data-test="JobTile"]');
-            const results: any[] = [];
-
-            jobCards.forEach((card) => {
-              const titleEl = card.querySelector(
-                '[data-test="job-tile-title-link UpLink"]',
+            if (jobTiles.length === 0) {
+              console.log(
+                `🕵️ Waiting for job tiles... (${attempt + 1}/${MAX_RETRIES})`,
               );
-              const title = titleEl?.textContent?.trim() || "";
-              const url = titleEl
-                ? `https://www.upwork.com${titleEl.getAttribute("href")}`
-                : "";
+              await delay(1000);
+              continue;
+            }
 
-              const id = url.match(/~\w+/)?.[0];
-
-              const apply = id
-                ? `https://www.upwork.com/nx/proposals/job/${id}/apply/`
-                : "";
-
-              // ✅ FIX: Avoid global ID — use nested lookup instead
-              const descWrapper = card.querySelector(
-                '[data-test="UpCLineClamp JobDescription"]',
+            jobs = await page.evaluate(() => {
+              const jobCards = document.querySelectorAll(
+                '[data-test="JobTile"]',
               );
+              const results: any[] = [];
 
-              const paragraph = descWrapper?.querySelector("p");
-              const description = paragraph?.textContent?.trim() || "";
+              jobCards.forEach((card) => {
+                const titleEl = card.querySelector(
+                  '[data-test="job-tile-title-link UpLink"]',
+                );
+                const title = titleEl?.textContent?.trim() || "";
+                const url = titleEl
+                  ? `https://www.upwork.com${titleEl.getAttribute("href")}`
+                  : "";
 
-              const date =
-                card
-                  .querySelector(`[data-test="job-pubilshed-date"]`)
-                  ?.textContent?.trim() || "";
+                const id = url.match(/~\w+/)?.[0];
 
-              const info =
-                card
-                  .querySelector(`[data-test="JobInfo"]`)
-                  ?.textContent?.trim() || "";
+                const apply = id
+                  ? `https://www.upwork.com/nx/proposals/job/${id}/apply/`
+                  : "";
 
-              results.push({
-                id,
-                title,
-                date,
-                info,
-                description,
-                url,
-                apply,
+                // ✅ FIX: Avoid global ID — use nested lookup instead
+                const descWrapper = card.querySelector(
+                  '[data-test="UpCLineClamp JobDescription"]',
+                );
+
+                const paragraph = descWrapper?.querySelector("p");
+                const description = paragraph?.textContent?.trim() || "";
+
+                const date =
+                  card
+                    .querySelector(`[data-test="job-pubilshed-date"]`)
+                    ?.textContent?.trim() || "";
+
+                const info =
+                  card
+                    .querySelector(`[data-test="JobInfo"]`)
+                    ?.textContent?.trim() || "";
+
+                results.push({
+                  id,
+                  title,
+                  date,
+                  info,
+                  description,
+                  url,
+                  apply,
+                });
               });
+
+              return results;
             });
 
-            return results;
-          });
-
-          break;
-        } catch (err) {
-          console.error(`⚠️ Error during scrape attempt ${attempt + 1}:`, err);
-          continue;
+            break;
+          } catch (err) {
+            console.error(
+              `⚠️ Error during scrape attempt ${attempt + 1}:`,
+              err,
+            );
+            continue;
+          }
         }
-      }
 
-      if (jobs.length === 0) {
-        console.log("❌ Failed to scrape jobs after multiple attempts.");
-      } else {
-        console.log("✅ Scraped jobs", jobs.length);
-      }
+        if (jobs.length === 0) {
+          console.log("❌ Failed to scrape jobs after multiple attempts.");
+        } else {
+          console.log("✅ Scraped jobs", jobs.length);
+        }
 
-      processScrapedJob(userid, jobs);
-      await delay(5000);
+        processScrapedJob(userid, jobs);
+        await delay(5000);
+      }
+    } catch (err) {
+      console.error("Error in scrapeJobs loop:", (err as Error).message);
+    } finally {
+      await page.close();
+      await browser.close();
+    }
+
+    // Restart browser every N iterations to avoid memory leaks
+    if (iteration % RESTART_BROWSER_EVERY === 0) {
+      console.log("♻️ Restarting browser to free resources...");
+      await delay(10000);
     }
   }
 }
