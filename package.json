@@ -2,7 +2,7 @@
   "name": "upwork2tg",
   "version": "1.0.0",
   "main": "index.js",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "dev": "nodemon --watch src --ext ts,js --exec tsx src/index.ts",
     "build": "tsc",
@@ -11,15 +11,32 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix"
   },
-  "keywords": [],
-  "author": "",
+  "_moduleAliases": {
+    "@": "dist"
+  },
+  "keywords": [
+    "upwork",
+    "telegram-bot",
+    "job-notifications",
+    "freelance",
+    "job-alerts",
+    "puppeteer",
+    "telegram",
+    "bot",
+    "upwork-bot",
+    "freelance-jobs",
+    "real-time-jobs",
+    "NodeJs"
+  ],
+  "author": "CodeByStella",
   "license": "ISC",
-  "description": "",
+  "description": "Upwork Job Notification Bot For Freelancers using node.js",
   "dependencies": {
     "@eslint/js": "^9.26.0",
     "dotenv": "^16.5.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.4.0",
+    "module-alias": "^2.2.3",
     "mongodb": "^6.16.0",
     "mongoose": "^8.14.3",
     "node-cron": "^4.0.5",
