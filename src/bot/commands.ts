@@ -121,7 +121,7 @@ const setup_commands = async (bot: Telegraf) => {
     let currentChunk = header;
 
     users.forEach((user) => {
-      const line = `${user.notification ? "🟢" : "🔴"}${formatDate(user.created)} - @${user.username} ${
+      const line = `${user.notification&&!isEmpty(user.searchUrl) ? "🟢" : "🔴"}${formatDate(user.created)} - @${user.username} ${
         user.isPremium ? "💎" : user.isTrial ? "🧪" : user.trialUsed ? "🟡" : ""
       }\n`;
 
