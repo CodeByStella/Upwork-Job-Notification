@@ -44,12 +44,16 @@ const broadcastMessageScene = new Scenes.WizardScene<any>(
   },
   async (ctx) => {
     const users = await User.find({}).lean();
-
     let broadcastFn;
 
     // Text
     if (ctx.message?.text) {
-      const text = ctx.message.text.trim();
+      const text: string = ctx.message.text.trim();
+      if (text.startsWith("/")) {
+        await ctx.reply("Broadcast have been canceled");
+        return ctx.scene.leave();
+      }
+
       broadcastFn = async (userId: number) => {
         await ctx.telegram.sendMessage(
           userId,
