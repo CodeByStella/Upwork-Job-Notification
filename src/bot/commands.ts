@@ -110,7 +110,12 @@ const setup_commands = async (bot: Telegraf) => {
       else if (user.trialUsed) OutdatedUsers++;
     });
 
-    const header = `🟢 *Current Status*\n\n Total:🧮x${users.length}   Premium:💎x${premiumUsers}   Trial:🧪x${trialUsers}   Ended:🟡x${OutdatedUsers}\n ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    const header = [
+      "🟢 *Current Status*",
+      "",
+      `Total:🧮x${users.length}   Premium:💎x${premiumUsers}   Trial:🧪x${trialUsers}   Ended:🟡x${OutdatedUsers}`,
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+    ].join("\n");
 
     const messages = [];
     let currentChunk = header;
