@@ -1,5 +1,3 @@
-# Upwork Job Notification Bot
-
 ![image](https://github.com/user-attachments/assets/55afc034-fcf8-4852-beb2-f1677dc77b4c)
 
 ## 🔍 What it does
