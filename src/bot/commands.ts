@@ -111,7 +111,7 @@ const setup_commands = async (bot: Telegraf) => {
     });
 
     const header = [
-      "🟢 *Current Status*",
+      "🟢 Current Status",
       "",
       `Total:🧮x${users.length}   Premium:💎x${premiumUsers}   Trial:🧪x${trialUsers}   Ended:🟡x${OutdatedUsers}`,
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
@@ -136,7 +136,7 @@ const setup_commands = async (bot: Telegraf) => {
     if (currentChunk) messages.push(currentChunk);
 
     for (const msg of messages) {
-      await ctx.reply(msg, { parse_mode: "Markdown" });
+      await ctx.reply(msg);
     }
   });
 
