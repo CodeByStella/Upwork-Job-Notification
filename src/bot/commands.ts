@@ -5,7 +5,7 @@ import User from "@/models/User";
 import UserType from "@/types/user";
 import { formatDate, isEmpty } from "@/utils";
 import { Markup, Telegraf } from "telegraf";
-import { SceneName } from "./scene";
+import { BroadcastMessageSceneName, ConfigSceneName } from "./scene";
 
 const commands: {
   command: string;
@@ -13,6 +13,10 @@ const commands: {
 }[] = [
   { command: "start", description: "Start the bot" },
   { command: "status", description: "Get the bot's status (admin only)" },
+  {
+    command: "broadcast",
+    description: "Broadcast a message to all users (admin only)",
+  },
 ];
 
 const TELEGRAM_MSG_LIMIT = 3000;
@@ -121,7 +125,7 @@ const setup_commands = async (bot: Telegraf) => {
     let currentChunk = header;
 
     users.forEach((user) => {
-      const line = `${user.notification&&!isEmpty(user.searchUrl) ? "🟢" : "🔴"}${formatDate(user.created)} - @${user.username} ${
+      const line = `${user.notification && !isEmpty(user.searchUrl) ? "🟢" : "🔴"}${formatDate(user.created)} - @${user.username} ${
         user.isPremium ? "💎" : user.isTrial ? "🧪" : user.trialUsed ? "🟡" : ""
       }\n`;
 
@@ -138,6 +142,14 @@ const setup_commands = async (bot: Telegraf) => {
     for (const msg of messages) {
       await ctx.reply(msg);
     }
+  });
+
+  bot.command("broadcast", async (ctx: any) => {
+    const userId = ctx.update.message.from.id;
+    if (config.ADMIN_ID !== userId.toString())
+      return ctx.reply(`🚫 This command is for admin only.`);
+
+    return ctx.scene.enter(BroadcastMessageSceneName);
   });
 
   bot.hears(SOURCE_URL, async (ctx) => {
@@ -275,7 +287,7 @@ const setup_commands = async (bot: Telegraf) => {
     const user = await User.findOne({ id: userId });
 
     if (user?.isPremium || user?.isTrial) {
-      ctx.scene.enter(SceneName);
+      ctx.scene.enter(ConfigSceneName);
     } else {
       await ctx.reply("Please subscribe a plan first.⚠️", {
         parse_mode: "Markdown",
