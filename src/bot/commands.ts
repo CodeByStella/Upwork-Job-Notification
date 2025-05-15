@@ -216,7 +216,7 @@ const setup_commands = async (bot: Telegraf) => {
   });
   bot.on("pre_checkout_query", (ctx) => ctx.answerPreCheckoutQuery(true));
   bot.on("successful_payment", async (ctx) => {
-    ctx.reply(
+    await ctx.reply(
       "Thank you for your purchase!\nYou can use the bot for *one month* from now.",
       {
         parse_mode: "Markdown",
