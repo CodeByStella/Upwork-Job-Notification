@@ -16,7 +16,6 @@ export const sendMessage = async (
 ) => {
   try {
     await bot.telegram.sendMessage(chatId, text, {
-      parse_mode: "Markdown",
       ...Markup.inlineKeyboard([
         Markup.button.url("Explore Job", url),
         Markup.button.url("Direct Apply", apply),
