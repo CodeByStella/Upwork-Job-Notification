@@ -21,8 +21,8 @@ export const sendMessage = async (
         Markup.button.url("Direct Apply", apply),
       ]),
     });
-  } catch (error) {
-    console.error(`Error sending message to chat ${chatId}:`, error);
+  } catch (error: any) {
+    console.error(`Error sending message to chat ${chatId}`, error.message);
   }
 };
 
