@@ -7,7 +7,12 @@ import User from "@/models/User";
 const useRealBrowser = async () => {
   const { browser, page } = await connect({
     headless: false,
-    args: [],
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-blink-features=AutomationControlled",
+    ],
     customConfig: {},
     turnstile: true,
     connectOption: {},
@@ -120,15 +125,13 @@ export async function scrapeJobs() {
       const searchUrl = subscribedUsers[index].searchUrl || "";
       const userid = subscribedUsers[index].id;
 
-      console.log(searchUrl);
-
       if (isEmpty(searchUrl)) continue;
 
       await page.goto(searchUrl, {
         waitUntil: "domcontentloaded",
         timeout: 20000,
       });
-      const MAX_RETRIES = 20;
+      const MAX_RETRIES = 30;
       let jobs = [];
       let pageTitle = "";
 
@@ -226,7 +229,7 @@ export async function scrapeJobs() {
       if (jobs.length === 0) {
         console.log("❌ Failed to scrape jobs after multiple attempts.");
       } else {
-        console.log("✅ Scraped jobs:", jobs);
+        console.log("✅ Scraped jobs", jobs.length);
       }
 
       processScrapedJob(userid, jobs);

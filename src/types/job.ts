@@ -5,13 +5,13 @@ interface JobType {
 }
 
 export interface ScrapedJobType {
-  id: string;
   title: string;
-  date: string;
   info: string;
+  date: string;
   description: string;
   url: string;
   apply: string;
+  id: string;
 }
 
 export default JobType;
