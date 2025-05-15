@@ -1,8 +1,6 @@
-
-
 # Upwork Job Notification Bot
 
-Get notified about new Upwork jobs directly in Telegram—fast.
+![image](https://github.com/user-attachments/assets/55afc034-fcf8-4852-beb2-f1677dc77b4c)
 
 ## 🔍 What it does
 
