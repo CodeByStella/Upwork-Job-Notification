@@ -1,10 +1,12 @@
 import User from "@/models/User";
+import { delay } from "@/utils";
 import { Scenes, session, Telegraf } from "telegraf";
 
-export const SceneName = "config-wizard";
+export const ConfigSceneName = "config-wizard";
+export const BroadcastMessageSceneName = "broadcast-message";
 
 const configUrlScene = new Scenes.WizardScene<any>(
-  SceneName,
+  ConfigSceneName,
   async (ctx) => {
     await ctx.reply(
       "Please enter the URL you want to see job listings from. (Refer the help)",
@@ -32,7 +34,93 @@ const configUrlScene = new Scenes.WizardScene<any>(
   },
 );
 
-const stage = new Scenes.Stage<any>([configUrlScene]);
+const broadcastMessageScene = new Scenes.WizardScene<any>(
+  BroadcastMessageSceneName,
+  async (ctx) => {
+    await ctx.reply(
+      "Please send the message, image, video, or audio you want to broadcast to all users.",
+    );
+    return ctx.wizard.next();
+  },
+  async (ctx) => {
+    const users = await User.find({}).lean();
+
+    let broadcastFn;
+
+    // Text
+    if (ctx.message?.text) {
+      const text = ctx.message.text.trim();
+      broadcastFn = async (userId: number) => {
+        await ctx.telegram.sendMessage(
+          userId,
+          `🔉 *Broadcast message from admin*\n\n${text}`,
+          {
+            parse_mode: "Markdown",
+          },
+        );
+      };
+    }
+
+    // Photo
+    else if (ctx.message?.photo) {
+      const photo = ctx.message.photo.at(-1)?.file_id;
+      const caption = ctx.message.caption || "";
+      broadcastFn = async (userId: number) => {
+        await ctx.telegram.sendPhoto(userId, photo, {
+          caption: `🔉 *Broadcast from admin*\n\n${caption}`,
+          parse_mode: "Markdown",
+        });
+      };
+    }
+
+    // Video
+    else if (ctx.message?.video) {
+      const video = ctx.message.video.file_id;
+      const caption = ctx.message.caption || "";
+      broadcastFn = async (userId: number) => {
+        await ctx.telegram.sendVideo(userId, video, {
+          caption: `🔉 *Broadcast from admin*\n\n${caption}`,
+          parse_mode: "Markdown",
+        });
+      };
+    }
+
+    // Audio
+    else if (ctx.message?.audio) {
+      const audio = ctx.message.audio.file_id;
+      const caption = ctx.message.caption || "";
+      broadcastFn = async (userId: number) => {
+        await ctx.telegram.sendAudio(userId, audio, {
+          caption: `🔉 *Broadcast from admin*\n\n${caption}`,
+          parse_mode: "Markdown",
+        });
+      };
+    }
+
+    // Unsupported
+    else {
+      await ctx.reply(
+        "❌ Unsupported message type. Please send text, photo, video, or audio.",
+      );
+      return ctx.wizard.selectStep(1);
+    }
+
+    // Loop and send
+    for (const user of users) {
+      try {
+        await broadcastFn(user.id);
+        await delay(200);
+      } catch (error: any) {
+        console.log(`Failed to send to ${user.id}:`, error.message);
+      }
+    }
+
+    await ctx.reply("✅ Broadcast sent to all users.");
+    return ctx.scene.leave();
+  },
+);
+
+const stage = new Scenes.Stage<any>([configUrlScene, broadcastMessageScene]);
 
 const setup_scenes = (bot: Telegraf) => {
   bot.use(session());
