@@ -3,6 +3,7 @@ import { connect, PageWithCursor } from "puppeteer-real-browser";
 import config from "@/config";
 import processScrapedJob from "@/job.controller";
 import User from "@/models/User";
+import UserType from "@/types/user";
 
 const useRealBrowser = async () => {
   const { browser, page } = await connect({
@@ -110,21 +111,36 @@ async function login(page: PageWithCursor) {
 
 export async function scrapeJobs() {
   let iteration = 0;
-  const RESTART_BROWSER_EVERY = 10; // Restart browser every 10 cycles to avoid memory leaks
+  const RESTART_BROWSER_EVERY = 20; // Restart browser every 20 cycles to avoid memory leaks
+
+  let browser: Awaited<ReturnType<typeof useRealBrowser>>["browser"] | null =
+    null;
+  let page: Awaited<ReturnType<typeof useRealBrowser>>["page"] | null = null;
+  let subscribedUsers: UserType[];
 
   while (true) {
-    iteration++;
-    const { browser, page } = await useRealBrowser();
     try {
-      await page.setViewport({ width: 1220, height: 860 });
-      await login(page);
+      // Restart browser every N iterations or if not initialized
+      if (iteration % RESTART_BROWSER_EVERY === 0 || !browser || !page) {
+        console.log("♻️ Restarting browser to free resources...");
+        if (page) await page.close().catch(() => {});
+        if (browser) await browser.close().catch(() => {});
+        const realBrowser = await useRealBrowser();
+        browser = realBrowser.browser;
+        page = realBrowser.page;
+        iteration = 0;
 
-      await delay(20000);
+        await page!.setViewport({ width: 1220, height: 860 });
+        await login(page!);
 
-      const subscribedUsers = await User.find({
-        $or: [{ isPremium: true }, { isTrial: true }],
-        notification: true,
-      }).lean();
+        await delay(20000);
+
+        subscribedUsers = await User.find({
+          $or: [{ isPremium: true }, { isTrial: true }],
+          notification: true,
+        }).lean();
+      }
+      iteration++;
 
       for (let index = 0; index < subscribedUsers.length; index++) {
         const searchUrl = subscribedUsers[index].searchUrl || "";
@@ -132,7 +148,7 @@ export async function scrapeJobs() {
 
         if (isEmpty(searchUrl)) continue;
 
-        await page.goto(searchUrl, {
+        await page!.goto(searchUrl, {
           waitUntil: "domcontentloaded",
           timeout: 20000,
         });
@@ -142,7 +158,7 @@ export async function scrapeJobs() {
 
         //We detect page load by checking page title(Must start with "Upwork -")
         while (!pageTitle.startsWith("Upwork")) {
-          pageTitle = await page.title();
+          pageTitle = await page!.title();
           console.log(`📝 Checking Page Title: ${pageTitle}`);
           await delay(1000);
         }
@@ -151,7 +167,7 @@ export async function scrapeJobs() {
         //After page title is found, try to scrape with retries
         for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
           try {
-            const inputExists = await page.$(
+            const inputExists = await page!.$(
               '[data-test="UpCInput"] input[type="search"]',
             );
             if (!inputExists) {
@@ -162,7 +178,7 @@ export async function scrapeJobs() {
               continue;
             }
 
-            const jobTiles = await page.$$(
+            const jobTiles = await page!.$$(
               '[data-test="job-tile-title-link UpLink"]',
             );
             if (jobTiles.length === 0) {
@@ -173,7 +189,7 @@ export async function scrapeJobs() {
               continue;
             }
 
-            jobs = await page.evaluate(() => {
+            jobs = await page!.evaluate(() => {
               const jobCards = document.querySelectorAll(
                 '[data-test="JobTile"]',
               );
@@ -247,16 +263,8 @@ export async function scrapeJobs() {
       }
     } catch (err) {
       console.error("Error in scrapeJobs loop:", (err as Error).message);
-    } finally {
-      await page.close();
-      await browser.close();
     }
-
-    // Restart browser every N iterations to avoid memory leaks
-    if (iteration % RESTART_BROWSER_EVERY === 0) {
-      console.log("♻️ Restarting browser to free resources...");
-      await delay(10000);
-    }
+    // No longer close browser/page here; handled by restart logic above
   }
 }
 
