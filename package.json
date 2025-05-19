@@ -4,7 +4,7 @@
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
-    "dev": "nodemon --watch src --ext ts,js --exec tsx src/index.ts",
+    "dev": "cross-env NODE_ENV=development nodemon --watch src --ext ts,js --exec ts-node -r tsconfig-paths/register src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -13,6 +13,9 @@
   },
   "_moduleAliases": {
     "@": "dist"
+  },
+  "_moduleAliasesDev": {
+    "@": "src"
   },
   "keywords": [
     "upwork",
@@ -48,6 +51,7 @@
     "puppeteer-extra-plugin-stealth": "^2.11.2",
     "puppeteer-real-browser": "^1.4.2",
     "telegraf": "^4.16.3",
+    "tsconfig-paths": "^4.2.0",
     "tsx": "^4.19.4",
     "typescript-eslint": "^8.32.1",
     "user-agents": "^1.1.538"
@@ -57,6 +61,7 @@
     "@types/user-agents": "^1.0.4",
     "@typescript-eslint/eslint-plugin": "^8.32.1",
     "@typescript-eslint/parser": "^8.32.1",
+    "cross-env": "^7.0.3",
     "eslint": "^9.26.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
