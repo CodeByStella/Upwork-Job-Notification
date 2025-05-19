@@ -1,8 +1,7 @@
-import "module-alias/register";
-import { launchBot } from "./bot";
-import startCronJob from "./cronjob";
-import { connectDB } from "./db";
-import { startScraping } from "./scraper";
+import { launchBot } from "@/bot";
+import startCronJob from "@/cronjob";
+import { connectDB } from "@/db";
+import { startScraping } from "@/scraper";
 
 (async () => {
   await connectDB();
