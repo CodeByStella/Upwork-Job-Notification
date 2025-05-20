@@ -5,6 +5,8 @@ import processScrapedJob from "@/job.controller";
 import User from "@/models/User";
 import UserType from "@/types/user";
 
+let scraping = false;
+
 const useRealBrowser = async () => {
   try {
     const { browser, page } = await connect({
@@ -129,6 +131,19 @@ export async function scrapeJobs() {
   let subscribedUsers: UserType[];
 
   while (true) {
+    if (!scraping) {
+      try {
+        if (page) await page.close().catch(() => {});
+      } catch (err) {
+        console.error("Error closing page:", (err as Error).message);
+      }
+      try {
+        if (browser) await browser.close().catch(() => {});
+      } catch (err) {
+        console.error("Error closing browser:", (err as Error).message);
+      }
+    }
+
     try {
       // Restart browser every N iterations or if not initialized
       if (iteration % RESTART_BROWSER_EVERY === 0 || !browser || !page) {
@@ -184,6 +199,7 @@ export async function scrapeJobs() {
       iteration++;
 
       for (let index = 0; index < subscribedUsers.length; index++) {
+        if (!scraping) break;
         try {
           const searchUrl = subscribedUsers[index].searchUrl || "";
           const userid = subscribedUsers[index].id;
@@ -336,6 +352,7 @@ export async function scrapeJobs() {
 
 export const startScraping = async () => {
   try {
+    scraping = true;
     await scrapeJobs();
   } catch (error) {
     console.error(
@@ -343,4 +360,12 @@ export const startScraping = async () => {
       (error as Error).message,
     );
   }
+};
+
+export const stopScraping = () => {
+  scraping = false;
+};
+
+export const getScrapingStatus = () => {
+  return scraping;
 };
