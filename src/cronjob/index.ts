@@ -1,5 +1,6 @@
 import cron from "node-cron";
 import User from "@/models/User";
+import { sendMessage } from "@/bot";
 
 const MS_IN_DAY = 24 * 60 * 60 * 1000;
 
@@ -17,20 +18,28 @@ const checkAndUpdateUsers = async ({
   const now = Date.now();
 
   for (const user of users) {
-    const timeDiff = now - new Date(user.subscribed).getTime();
-    if (timeDiff > maxDays * MS_IN_DAY) {
-      console.log(`${label} expired: https://t.me/${user.username}`);
-      await User.updateOne(
-        { _id: user._id },
-        { ...updateFields, subscribed: new Date() },
-      );
+    try {
+      const timeDiff = now - new Date(user.subscribed).getTime();
+      if (timeDiff > maxDays * MS_IN_DAY) {
+        console.log(`${label} User expired: https://t.me/${user.username}`);
+        await User.updateOne(
+          { _id: user._id },
+          { ...updateFields, subscribed: new Date() },
+        );
+        await sendMessage(
+          user.id,
+          `Your ${label.toLocaleLowerCase()} subscription has expired.`,
+        );
+      }
+    } catch (error) {
+      console.error(`Error updating ${label} (${user.username}):`, error);
     }
   }
 };
 
 const startCronJob = () => {
   cron.schedule(
-    "0 0 * * *",
+    "0 */4 * * *",
     async () => {
       console.log("Running daily user check at midnight");
       try {
@@ -43,14 +52,14 @@ const startCronJob = () => {
           users: trialUsers,
           maxDays: 3,
           updateFields: { isTrial: false, trialUsed: true },
-          label: "Trial User",
+          label: "Trial",
         });
 
         await checkAndUpdateUsers({
           users: premiumUsers,
           maxDays: 30,
           updateFields: { isPremium: false, trialUsed: true },
-          label: "Premium User",
+          label: "Premium",
         });
       } catch (error) {
         console.error("Cron job error:", error);
