@@ -6,22 +6,27 @@ import User from "@/models/User";
 import UserType from "@/types/user";
 
 const useRealBrowser = async () => {
-  const { browser, page } = await connect({
-    headless: false,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-blink-features=AutomationControlled",
-    ],
-    customConfig: {},
-    turnstile: true,
-    connectOption: {},
-    disableXvfb: false,
-    ignoreAllFlags: false,
-  });
+  try {
+    const { browser, page } = await connect({
+      headless: false,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-blink-features=AutomationControlled",
+      ],
+      customConfig: {},
+      turnstile: true,
+      connectOption: {},
+      disableXvfb: false,
+      ignoreAllFlags: false,
+    });
 
-  return { browser, page };
+    return { browser, page };
+  } catch (err) {
+    console.error("Error in useRealBrowser:", (err as Error).message);
+    throw err;
+  }
 };
 
 async function autoAcceptCookies(page: PageWithCursor): Promise<void> {
@@ -47,66 +52,71 @@ async function autoAcceptCookies(page: PageWithCursor): Promise<void> {
 }
 
 async function login(page: PageWithCursor) {
-  await page.goto("https://www.upwork.com/ab/account-security/login", {
-    waitUntil: "domcontentloaded",
-  });
+  try {
+    await page.goto("https://www.upwork.com/ab/account-security/login", {
+      waitUntil: "domcontentloaded",
+    });
 
-  await autoAcceptCookies(page);
+    await autoAcceptCookies(page);
 
-  // 🔹 Wait for login_username to be visible AND enabled
-  await page.waitForFunction(
-    () => {
-      const input = document.querySelector("input#login_username");
-      return (
-        input &&
-        !input.hasAttribute("disabled") &&
-        (input as HTMLElement).offsetParent !== null
-      );
-    },
-    { timeout: 10000 },
-  );
-  console.log("✅ Username input is ready");
+    // 🔹 Wait for login_username to be visible AND enabled
+    await page.waitForFunction(
+      () => {
+        const input = document.querySelector("input#login_username");
+        return (
+          input &&
+          !input.hasAttribute("disabled") &&
+          (input as HTMLElement).offsetParent !== null
+        );
+      },
+      { timeout: 10000 },
+    );
+    console.log("✅ Username input is ready");
 
-  await page.type("input#login_username", config.EMAIL, { delay: 150 });
+    await page.type("input#login_username", config.EMAIL, { delay: 150 });
 
-  // 🔹 Wait for and click the continue button
-  await page.waitForSelector("button#login_password_continue", {
-    visible: true,
-    timeout: 10000,
-  });
-  await page.click("button#login_password_continue");
-  console.log("➡️ Clicked continue after username");
+    // 🔹 Wait for and click the continue button
+    await page.waitForSelector("button#login_password_continue", {
+      visible: true,
+      timeout: 10000,
+    });
+    await page.click("button#login_password_continue");
+    console.log("➡️ Clicked continue after username");
 
-  // 🔹 Wait for password input to become active
-  await page.waitForFunction(
-    () => {
-      const input = document.querySelector("input#login_password");
-      return (
-        input &&
-        !input.hasAttribute("disabled") &&
-        (input as HTMLElement).offsetParent !== null
-      );
-    },
-    { timeout: 10000 },
-  );
-  console.log("✅ Password input is ready");
+    // 🔹 Wait for password input to become active
+    await page.waitForFunction(
+      () => {
+        const input = document.querySelector("input#login_password");
+        return (
+          input &&
+          !input.hasAttribute("disabled") &&
+          (input as HTMLElement).offsetParent !== null
+        );
+      },
+      { timeout: 10000 },
+    );
+    console.log("✅ Password input is ready");
 
-  await page.type("input#login_password", config.PASSWORD, { delay: 150 });
+    await page.type("input#login_password", config.PASSWORD, { delay: 150 });
 
-  // 🔹 Remember me checkbox
-  await page.waitForSelector("input#login_rememberme", {
-    visible: true,
-    timeout: 10000,
-  });
-  await page.click("input#login_rememberme");
+    // 🔹 Remember me checkbox
+    await page.waitForSelector("input#login_rememberme", {
+      visible: true,
+      timeout: 10000,
+    });
+    await page.click("input#login_rememberme");
 
-  // 🔹 Final login button
-  await page.waitForSelector("button#login_control_continue", {
-    visible: true,
-    timeout: 10000,
-  });
-  await page.click("button#login_control_continue");
-  console.log("🔓 Submitted login form");
+    // 🔹 Final login button
+    await page.waitForSelector("button#login_control_continue", {
+      visible: true,
+      timeout: 10000,
+    });
+    await page.click("button#login_control_continue");
+    console.log("🔓 Submitted login form");
+  } catch (err) {
+    console.error("Error in login:", (err as Error).message);
+    throw err;
+  }
 }
 
 export async function scrapeJobs() {
@@ -123,143 +133,199 @@ export async function scrapeJobs() {
       // Restart browser every N iterations or if not initialized
       if (iteration % RESTART_BROWSER_EVERY === 0 || !browser || !page) {
         console.log("♻️ Restarting browser to free resources...");
-        if (page) await page.close().catch(() => {});
-        if (browser) await browser.close().catch(() => {});
-        const realBrowser = await useRealBrowser();
+        try {
+          if (page) await page.close().catch(() => {});
+        } catch (err) {
+          console.error("Error closing page:", (err as Error).message);
+        }
+        try {
+          if (browser) await browser.close().catch(() => {});
+        } catch (err) {
+          console.error("Error closing browser:", (err as Error).message);
+        }
+        let realBrowser;
+        try {
+          realBrowser = await useRealBrowser();
+        } catch (err) {
+          console.error("Error creating real browser:", (err as Error).message);
+          await delay(5000);
+          continue;
+        }
         browser = realBrowser.browser;
         page = realBrowser.page;
         iteration = 0;
 
-        await page!.setViewport({ width: 1220, height: 860 });
-        await login(page!);
+        try {
+          await page!.setViewport({ width: 1220, height: 860 });
+        } catch (err) {
+          console.error("Error setting viewport:", (err as Error).message);
+        }
+        try {
+          await login(page!);
+        } catch (err) {
+          console.error("Error during login:", (err as Error).message);
+          await delay(5000);
+          continue;
+        }
 
         await delay(20000);
 
-        subscribedUsers = await User.find({
-          $or: [{ isPremium: true }, { isTrial: true }],
-          notification: true,
-        }).lean();
+        try {
+          subscribedUsers = await User.find({
+            $or: [{ isPremium: true }, { isTrial: true }],
+            notification: true,
+          }).lean();
+        } catch (err) {
+          console.error("Error fetching users:", (err as Error).message);
+          await delay(5000);
+          continue;
+        }
       }
       iteration++;
 
       for (let index = 0; index < subscribedUsers.length; index++) {
-        const searchUrl = subscribedUsers[index].searchUrl || "";
-        const userid = subscribedUsers[index].id;
+        try {
+          const searchUrl = subscribedUsers[index].searchUrl || "";
+          const userid = subscribedUsers[index].id;
 
-        if (isEmpty(searchUrl)) continue;
+          if (isEmpty(searchUrl)) continue;
 
-        await page!.goto(searchUrl, {
-          waitUntil: "domcontentloaded",
-          timeout: 20000,
-        });
-        const MAX_RETRIES = 30;
-        let jobs = [];
-        let pageTitle = "";
-
-        //We detect page load by checking page title(Must start with "Upwork -")
-        while (!pageTitle.startsWith("Upwork")) {
-          pageTitle = await page!.title();
-          console.log(`📝 Checking Page Title: ${pageTitle}`);
-          await delay(1000);
-        }
-        console.log(`✅ Correct page title found: ${pageTitle}`);
-
-        //After page title is found, try to scrape with retries
-        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
           try {
-            const inputExists = await page!.$(
-              '[data-test="UpCInput"] input[type="search"]',
-            );
-            if (!inputExists) {
-              console.log(
-                `🔄 Waiting for search input... (${attempt + 1}/${MAX_RETRIES})`,
-              );
-              await delay(1000);
-              continue;
-            }
-
-            const jobTiles = await page!.$$(
-              '[data-test="job-tile-title-link UpLink"]',
-            );
-            if (jobTiles.length === 0) {
-              console.log(
-                `🕵️ Waiting for job tiles... (${attempt + 1}/${MAX_RETRIES})`,
-              );
-              await delay(1000);
-              continue;
-            }
-
-            jobs = await page!.evaluate(() => {
-              const jobCards = document.querySelectorAll(
-                '[data-test="JobTile"]',
-              );
-              const results: any[] = [];
-
-              jobCards.forEach((card) => {
-                const titleEl = card.querySelector(
-                  '[data-test="job-tile-title-link UpLink"]',
-                );
-                const title = titleEl?.textContent?.trim() || "";
-                const url = titleEl
-                  ? `https://www.upwork.com${titleEl.getAttribute("href")}`
-                  : "";
-
-                const id = url.match(/~\w+/)?.[0];
-
-                const apply = id
-                  ? `https://www.upwork.com/nx/proposals/job/${id}/apply/`
-                  : "";
-
-                // ✅ FIX: Avoid global ID — use nested lookup instead
-                const descWrapper = card.querySelector(
-                  '[data-test="UpCLineClamp JobDescription"]',
-                );
-
-                const paragraph = descWrapper?.querySelector("p");
-                const description = paragraph?.textContent?.trim() || "";
-
-                const date =
-                  card
-                    .querySelector(`[data-test="job-pubilshed-date"]`)
-                    ?.textContent?.trim() || "";
-
-                const info =
-                  card
-                    .querySelector(`[data-test="JobInfo"]`)
-                    ?.textContent?.trim() || "";
-
-                results.push({
-                  id,
-                  title,
-                  date,
-                  info,
-                  description,
-                  url,
-                  apply,
-                });
-              });
-
-              return results;
+            await page!.goto(searchUrl, {
+              waitUntil: "domcontentloaded",
+              timeout: 20000,
             });
-
-            break;
           } catch (err) {
             console.error(
-              `⚠️ Error during scrape attempt ${attempt + 1}:`,
-              err,
+              "Error navigating to searchUrl:",
+              (err as Error).message,
             );
             continue;
           }
-        }
+          const MAX_RETRIES = 30;
+          let jobs = [];
+          let pageTitle = "";
 
-        if (jobs.length === 0) {
-          console.log("❌ Failed to scrape jobs after multiple attempts.");
-        } else {
-          console.log("✅ Scraped jobs", jobs.length);
-        }
+          //We detect page load by checking page title(Must start with "Upwork -")
+          try {
+            while (!pageTitle.startsWith("Upwork")) {
+              pageTitle = await page!.title();
+              console.log(`📝 Checking Page Title: ${pageTitle}`);
+              await delay(1000);
+            }
+            console.log(`✅ Correct page title found: ${pageTitle}`);
+          } catch (err) {
+            console.error("Error checking page title:", (err as Error).message);
+            continue;
+          }
 
-        processScrapedJob(userid, jobs);
-        await delay(5000);
+          //After page title is found, try to scrape with retries
+          for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+            try {
+              const inputExists = await page!.$(
+                '[data-test="UpCInput"] input[type="search"]',
+              );
+              if (!inputExists) {
+                console.log(
+                  `🔄 Waiting for search input... (${attempt + 1}/${MAX_RETRIES})`,
+                );
+                await delay(1000);
+                continue;
+              }
+
+              const jobTiles = await page!.$$(
+                '[data-test="job-tile-title-link UpLink"]',
+              );
+              if (jobTiles.length === 0) {
+                console.log(
+                  `🕵️ Waiting for job tiles... (${attempt + 1}/${MAX_RETRIES})`,
+                );
+                await delay(1000);
+                continue;
+              }
+
+              jobs = await page!.evaluate(() => {
+                const jobCards = document.querySelectorAll(
+                  '[data-test="JobTile"]',
+                );
+                const results: any[] = [];
+
+                jobCards.forEach((card) => {
+                  const titleEl = card.querySelector(
+                    '[data-test="job-tile-title-link UpLink"]',
+                  );
+                  const title = titleEl?.textContent?.trim() || "";
+                  const url = titleEl
+                    ? `https://www.upwork.com${titleEl.getAttribute("href")}`
+                    : "";
+
+                  const id = url.match(/~\w+/)?.[0];
+
+                  const apply = id
+                    ? `https://www.upwork.com/nx/proposals/job/${id}/apply/`
+                    : "";
+
+                  // ✅ FIX: Avoid global ID — use nested lookup instead
+                  const descWrapper = card.querySelector(
+                    '[data-test="UpCLineClamp JobDescription"]',
+                  );
+
+                  const paragraph = descWrapper?.querySelector("p");
+                  const description = paragraph?.textContent?.trim() || "";
+
+                  const date =
+                    card
+                      .querySelector(`[data-test="job-pubilshed-date"]`)
+                      ?.textContent?.trim() || "";
+
+                  const info =
+                    card
+                      .querySelector(`[data-test="JobInfo"]`)
+                      ?.textContent?.trim() || "";
+
+                  results.push({
+                    id,
+                    title,
+                    date,
+                    info,
+                    description,
+                    url,
+                    apply,
+                  });
+                });
+
+                return results;
+              });
+
+              break;
+            } catch (err) {
+              console.error(
+                `⚠️ Error during scrape attempt ${attempt + 1}:`,
+                err,
+              );
+              continue;
+            }
+          }
+
+          if (jobs.length === 0) {
+            console.log("❌ Failed to scrape jobs after multiple attempts.");
+          } else {
+            console.log("✅ Scraped jobs", jobs.length);
+          }
+
+          try {
+            processScrapedJob(userid, jobs);
+          } catch (err) {
+            console.error(
+              "Error in processScrapedJob:",
+              (err as Error).message,
+            );
+          }
+          await delay(5000);
+        } catch (err) {
+          console.error("Error in user scraping loop:", (err as Error).message);
+          continue;
+        }
       }
     } catch (err) {
       console.error("Error in scrapeJobs loop:", (err as Error).message);

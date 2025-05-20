@@ -1,10 +1,10 @@
 import { launchBot } from "@/bot";
 import startCronJob from "@/cronjob";
-import { connectDB } from "@/db";
+import { connectDBWithRetry } from "@/db";
 import { startScraping } from "@/scraper";
 
 (async () => {
-  await connectDB();
+  await connectDBWithRetry();
   startCronJob();
   const status = await launchBot();
   console.log(status);
