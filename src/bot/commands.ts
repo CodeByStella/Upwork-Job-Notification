@@ -6,6 +6,7 @@ import UserType from "@/types/user";
 import { formatDate, isEmpty } from "@/utils";
 import { Markup, Telegraf } from "telegraf";
 import { BroadcastMessageSceneName, ConfigSceneName } from "./scene";
+import { getScrapingStatus, startScraping, stopScraping } from "@/scraper";
 
 const commands: {
   command: string;
@@ -16,6 +17,14 @@ const commands: {
   {
     command: "broadcast",
     description: "Broadcast a message to all users (admin only)",
+  },
+  {
+    command: "start_scraping",
+    description: "Start scraping job postings (admin only)",
+  },
+  {
+    command: "stop_scraping",
+    description: "Stop scraping job postings (admin only)",
   },
 ];
 
@@ -40,7 +49,7 @@ const setup_commands = async (bot: Telegraf) => {
       const args = ctx.message.text.split(" ");
       const referrerId = args[1];
 
-      const username = ctx.update.message.from.username;
+      const username = ctx.update.message.from.username || "Unknown";
       const userId = ctx.update.message.from.id;
 
       const existUser = await User.findOne({
@@ -170,6 +179,53 @@ const setup_commands = async (bot: Telegraf) => {
       return ctx.scene.enter(BroadcastMessageSceneName);
     } catch (error) {
       console.error("Error in /broadcast:", error);
+      ctx.reply("An error occurred. Please try again later.");
+    }
+  });
+
+  let canStart = false;
+
+  bot.command("start_scraping", async (ctx) => {
+    try {
+      const userId = ctx.update.message.from.id;
+      if (config.ADMIN_ID !== userId.toString())
+        return ctx.reply(`🚫 This command is for admin only.`);
+
+      const scraping = getScrapingStatus();
+
+      if (scraping) return await ctx.reply("Scraping is already ongoing.");
+
+      if (!canStart)
+        return await ctx.reply("Scraping is not allowed to start for now.");
+
+      await ctx.reply("🔍 Scraping started.");
+      startScraping();
+    } catch (error) {
+      console.error("Error in /start_scraping:", error);
+      ctx.reply("An error occurred. Please try again later.");
+    }
+  });
+
+  bot.command("stop_scraping", async (ctx) => {
+    try {
+      const userId = ctx.update.message.from.id;
+      if (config.ADMIN_ID !== userId.toString())
+        return ctx.reply(`🚫 This command is for admin only.`);
+
+      const scraping = getScrapingStatus();
+
+      if (!scraping) return await ctx.reply("Scraping is not ongoing.");
+
+      canStart = false;
+
+      setTimeout(() => {
+        canStart = true;
+      }, 60000);
+
+      await ctx.reply("🛑 Scraping stopped.");
+      stopScraping();
+    } catch (error) {
+      console.error("Error in /stop_scraping:", error);
       ctx.reply("An error occurred. Please try again later.");
     }
   });
