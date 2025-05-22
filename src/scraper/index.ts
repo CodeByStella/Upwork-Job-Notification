@@ -19,7 +19,9 @@ const useRealBrowser = async () => {
       ],
       customConfig: {},
       turnstile: true,
-      connectOption: {},
+      connectOption: {
+        protocolTimeout: 100000 // set to 60 seconds or whatever you need
+      },
       disableXvfb: false,
       ignoreAllFlags: false,
     });
