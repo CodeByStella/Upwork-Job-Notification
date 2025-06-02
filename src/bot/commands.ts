@@ -66,7 +66,7 @@ const setup_commands = async (bot: Telegraf) => {
           });
         }
 
-        ctx.reply(
+        await ctx.reply(
           `Welcome to the *Upwork Job Notifications Bot*, please select one of the following options.\n\n If you need assistance, please contact ${config.SUPPORT}`,
           {
             parse_mode: "Markdown",
@@ -79,7 +79,7 @@ const setup_commands = async (bot: Telegraf) => {
           },
         );
       } else {
-        ctx.reply(
+        await ctx.reply(
           `Welcome to the *Upwork Job Notifications Bot*, please select one of the following options.\n\n If you need assistance, please contact ${config.SUPPORT}`,
           {
             parse_mode: "Markdown",
@@ -95,7 +95,7 @@ const setup_commands = async (bot: Telegraf) => {
       }
     } catch (error) {
       console.error("Error in /start:", error);
-      ctx.reply("An error occurred. Please try again later.");
+      await ctx.reply("An error occurred. Please try again later.");
     }
   });
 
@@ -103,7 +103,7 @@ const setup_commands = async (bot: Telegraf) => {
     try {
       const userId = ctx.update.message.from.id;
       if (config.ADMIN_ID !== userId.toString())
-        return ctx.reply(`🚫 This command is for admin only.`);
+        return await ctx.reply(`🚫 This command is for admin only.`);
 
       const users = await User.find({}).lean();
 
@@ -166,7 +166,7 @@ const setup_commands = async (bot: Telegraf) => {
       }
     } catch (error) {
       console.error("Error in /status:", error);
-      ctx.reply("An error occurred while fetching status.");
+      await ctx.reply("An error occurred while fetching status.");
     }
   });
 
@@ -174,12 +174,12 @@ const setup_commands = async (bot: Telegraf) => {
     try {
       const userId = ctx.update.message.from.id;
       if (config.ADMIN_ID !== userId.toString())
-        return ctx.reply(`🚫 This command is for admin only.`);
+        return await ctx.reply(`🚫 This command is for admin only.`);
 
       return ctx.scene.enter(BroadcastMessageSceneName);
     } catch (error) {
       console.error("Error in /broadcast:", error);
-      ctx.reply("An error occurred. Please try again later.");
+      await ctx.reply("An error occurred. Please try again later.");
     }
   });
 
@@ -189,7 +189,7 @@ const setup_commands = async (bot: Telegraf) => {
     try {
       const userId = ctx.update.message.from.id;
       if (config.ADMIN_ID !== userId.toString())
-        return ctx.reply(`🚫 This command is for admin only.`);
+        return await ctx.reply(`🚫 This command is for admin only.`);
 
       const scraping = getScrapingStatus();
 
@@ -202,7 +202,7 @@ const setup_commands = async (bot: Telegraf) => {
       startScraping();
     } catch (error) {
       console.error("Error in /start_scraping:", error);
-      ctx.reply("An error occurred. Please try again later.");
+      await ctx.reply("An error occurred. Please try again later.");
     }
   });
 
@@ -210,7 +210,7 @@ const setup_commands = async (bot: Telegraf) => {
     try {
       const userId = ctx.update.message.from.id;
       if (config.ADMIN_ID !== userId.toString())
-        return ctx.reply(`🚫 This command is for admin only.`);
+        return await ctx.reply(`🚫 This command is for admin only.`);
 
       const scraping = getScrapingStatus();
 
@@ -226,13 +226,13 @@ const setup_commands = async (bot: Telegraf) => {
       stopScraping();
     } catch (error) {
       console.error("Error in /stop_scraping:", error);
-      ctx.reply("An error occurred. Please try again later.");
+      await ctx.reply("An error occurred. Please try again later.");
     }
   });
 
   bot.hears(SOURCE_URL, async (ctx) => {
     try {
-      ctx.reply(
+      await ctx.reply(
         `${config.SOURCE_URL}\n*Please give me a star to repository.* ⭐️`,
         {
           parse_mode: "Markdown",
@@ -240,16 +240,16 @@ const setup_commands = async (bot: Telegraf) => {
       );
     } catch (error) {
       console.error("Error in SOURCE_URL:", error);
-      ctx.reply("An error occurred. Please try again later.");
+      await ctx.reply("An error occurred. Please try again later.");
     }
   });
 
   bot.hears(HELP, async (ctx) => {
     try {
-      ctx.reply(helpText, { parse_mode: "Markdown" });
+      await ctx.reply(helpText, { parse_mode: "Markdown" });
     } catch (error) {
       console.error("Error in HELP:", error);
-      ctx.reply("An error occurred. Please try again later.");
+      await ctx.reply("An error occurred. Please try again later.");
     }
   });
 
@@ -259,19 +259,19 @@ const setup_commands = async (bot: Telegraf) => {
       const user = await User.findOne({ id: userId });
       if (user) {
         if (user.isPremium) {
-          return ctx.reply(`You are already using premium plan.💎`);
+          return await ctx.reply(`You are already using premium plan.💎`);
         }
         if (user.isTrial) {
-          return ctx.reply(`You are already using trial plan.🧪`);
+          return await ctx.reply(`You are already using trial plan.🧪`);
         }
         if (user.trialUsed) {
-          return ctx.reply(`Your trial plan has been expired.🟡`);
+          return await ctx.reply(`Your trial plan has been expired.🟡`);
         }
 
         user.isTrial = true;
         user.subscribed = new Date();
         await user.save();
-        ctx.reply(`Your trial has started. You have 3 days to use it.`, {
+        await ctx.reply(`Your trial has started. You have 3 days to use it.`, {
           parse_mode: "Markdown",
           ...Markup.keyboard([
             [CONFIG_JOB_LIST, GET_SUBSCRIPTION_STATUS],
@@ -282,11 +282,11 @@ const setup_commands = async (bot: Telegraf) => {
             .oneTime(),
         });
       } else {
-        ctx.reply(`User not found`);
+        await ctx.reply(`User not found`);
       }
     } catch (error) {
       console.error("Error in START_TRIAL:", error);
-      ctx.reply("An error occurred. Please try again later.");
+      await ctx.reply("An error occurred. Please try again later.");
     }
   });
 
@@ -296,7 +296,7 @@ const setup_commands = async (bot: Telegraf) => {
       const user = await User.findOne({ id: userId });
 
       if (user && user.isPremium)
-        return ctx.reply(`You are already using premium plan.💎`);
+        return await ctx.reply(`You are already using premium plan.💎`);
 
       ctx.replyWithInvoice({
         title: "Upwork Job Notification Subscription for 1 month",
@@ -309,16 +309,16 @@ const setup_commands = async (bot: Telegraf) => {
       });
     } catch (error) {
       console.error("Error in SUBSCRIBE:", error);
-      ctx.reply("An error occurred. Please try again later.");
+      await ctx.reply("An error occurred. Please try again later.");
     }
   });
 
-  bot.on("pre_checkout_query", (ctx) => {
+  bot.on("pre_checkout_query", async (ctx) => {
     try {
-      ctx.answerPreCheckoutQuery(true);
+      await ctx.answerPreCheckoutQuery(true);
     } catch (error) {
       console.error("Error in pre_checkout_query:", error);
-      ctx.reply("An error occurred. Please try again later.");
+      await ctx.reply("An error occurred. Please try again later.");
     }
   });
 
@@ -344,7 +344,7 @@ const setup_commands = async (bot: Telegraf) => {
       }
     } catch (error) {
       console.error("Error in successful_payment:", error);
-      ctx.reply("An error occurred. Please try again later.");
+      await ctx.reply("An error occurred. Please try again later.");
     }
   });
 
@@ -367,7 +367,7 @@ const setup_commands = async (bot: Telegraf) => {
       }
     } catch (error) {
       console.error("Error in START_NOTIFICATION:", error);
-      ctx.reply("An error occurred. Please try again later.");
+      await ctx.reply("An error occurred. Please try again later.");
     }
   });
 
@@ -385,7 +385,7 @@ const setup_commands = async (bot: Telegraf) => {
       }
     } catch (error) {
       console.error("Error in STOP_NOTIFICATION:", error);
-      ctx.reply("An error occurred. Please try again later.");
+      await ctx.reply("An error occurred. Please try again later.");
     }
   });
 
@@ -405,7 +405,7 @@ const setup_commands = async (bot: Telegraf) => {
       }
     } catch (error) {
       console.error("Error in GET_SUBSCRIPTION_STATUS:", error);
-      ctx.reply("An error occurred. Please try again later.");
+      await ctx.reply("An error occurred. Please try again later.");
     }
   });
 
@@ -423,7 +423,7 @@ const setup_commands = async (bot: Telegraf) => {
       }
     } catch (error) {
       console.error("Error in CONFIG_JOB_LIST:", error);
-      ctx.reply("An error occurred. Please try again later.");
+      await ctx.reply("An error occurred. Please try again later.");
     }
   });
 };
