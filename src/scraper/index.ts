@@ -332,7 +332,7 @@ export async function scrapeJobs() {
           }
 
           try {
-            processScrapedJob(userid, jobs);
+            processScrapedJob(userid, jobs.reverse());
           } catch (err) {
             console.error(
               "Error in processScrapedJob:",
