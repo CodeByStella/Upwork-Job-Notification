@@ -125,7 +125,7 @@ async function login(page: PageWithCursor) {
 
 export async function scrapeJobs() {
   let iteration = 0;
-  const RESTART_BROWSER_EVERY = 20; // Restart browser every 20 cycles to avoid memory leaks
+  const RESTART_BROWSER_EVERY = 50; // Restart browser every 20 cycles to avoid memory leaks
 
   let browser: Awaited<ReturnType<typeof useRealBrowser>>["browser"] | null =
     null;
