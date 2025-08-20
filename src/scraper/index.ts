@@ -9,22 +9,47 @@ let scraping = false;
 
 const useRealBrowser = async () => {
   try {
+    const proxy = (config as any).PROXY as string | undefined;
+    const proxyAuth = (config as any).PROXY_AUTH as
+      | { username: string; password: string }
+      | undefined;
+
+    const launchArgs = [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-blink-features=AutomationControlled",
+    ];
+
+    if (proxy) {
+      launchArgs.push(`--proxy-server=${proxy}`);
+      console.log("Using proxy:", proxy);
+    }
+
     const { browser, page } = await connect({
       headless: false,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-blink-features=AutomationControlled",
-      ],
+      args: launchArgs,
       customConfig: {},
       turnstile: true,
       connectOption: {
-        protocolTimeout: 100000 // set to 60 seconds or whatever you need
+        protocolTimeout: 100000, // set to 60 seconds or whatever you need
       },
       disableXvfb: false,
       ignoreAllFlags: false,
     });
+
+    // If proxy requires authentication, provide credentials to the page
+    if (proxy && proxyAuth && page && (page as any).authenticate) {
+      try {
+        await (page as any).authenticate({
+          username: proxyAuth.username,
+          password: proxyAuth.password,
+        });
+        console.log("Proxy authentication applied");
+      } catch (authErr) {
+        console.error("Error applying proxy auth:", (authErr as Error).message);
+      }
+    }
 
     return { browser, page };
   } catch (err) {
@@ -73,7 +98,7 @@ async function login(page: PageWithCursor) {
           (input as HTMLElement).offsetParent !== null
         );
       },
-      { timeout: 10000 },
+      { timeout: 10000 }
     );
     console.log("✅ Username input is ready");
 
@@ -97,7 +122,7 @@ async function login(page: PageWithCursor) {
           (input as HTMLElement).offsetParent !== null
         );
       },
-      { timeout: 10000 },
+      { timeout: 10000 }
     );
     console.log("✅ Password input is ready");
 
@@ -216,11 +241,11 @@ export async function scrapeJobs() {
           } catch (err) {
             console.error(
               "Error navigating to searchUrl:",
-              (err as Error).message,
+              (err as Error).message
             );
             continue;
           }
-          const MAX_RETRIES = 30;
+          const MAX_RETRIES = 50;
           let jobs = [];
           let pageTitle = "";
 
@@ -241,22 +266,22 @@ export async function scrapeJobs() {
           for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
             try {
               const inputExists = await page!.$(
-                '[data-test="UpCInput"] input[type="search"]',
+                '[data-test="UpCInput"] input[type="search"]'
               );
               if (!inputExists) {
                 console.log(
-                  `🔄 Waiting for search input... (${attempt + 1}/${MAX_RETRIES})`,
+                  `🔄 Waiting for search input... (${attempt + 1}/${MAX_RETRIES})`
                 );
                 await delay(1000);
                 continue;
               }
 
               const jobTiles = await page!.$$(
-                '[data-test="job-tile-title-link UpLink"]',
+                '[data-test="job-tile-title-link UpLink"]'
               );
               if (jobTiles.length === 0) {
                 console.log(
-                  `🕵️ Waiting for job tiles... (${attempt + 1}/${MAX_RETRIES})`,
+                  `🕵️ Waiting for job tiles... (${attempt + 1}/${MAX_RETRIES})`
                 );
                 await delay(1000);
                 continue;
@@ -264,13 +289,13 @@ export async function scrapeJobs() {
 
               jobs = await page!.evaluate(() => {
                 const jobCards = document.querySelectorAll(
-                  '[data-test="JobTile"]',
+                  '[data-test="JobTile"]'
                 );
                 const results: any[] = [];
 
                 jobCards.forEach((card) => {
                   const titleEl = card.querySelector(
-                    '[data-test="job-tile-title-link UpLink"]',
+                    '[data-test="job-tile-title-link UpLink"]'
                   );
                   const title = titleEl?.textContent?.trim() || "";
                   const url = titleEl
@@ -285,7 +310,7 @@ export async function scrapeJobs() {
 
                   // ✅ FIX: Avoid global ID — use nested lookup instead
                   const descWrapper = card.querySelector(
-                    '[data-test="UpCLineClamp JobDescription"]',
+                    '[data-test="UpCLineClamp JobDescription"]'
                   );
 
                   const paragraph = descWrapper?.querySelector("p");
@@ -319,7 +344,7 @@ export async function scrapeJobs() {
             } catch (err) {
               console.error(
                 `⚠️ Error during scrape attempt ${attempt + 1}:`,
-                err,
+                err
               );
               continue;
             }
@@ -336,7 +361,7 @@ export async function scrapeJobs() {
           } catch (err) {
             console.error(
               "Error in processScrapedJob:",
-              (err as Error).message,
+              (err as Error).message
             );
           }
           await delay(5000);
@@ -359,7 +384,7 @@ export const startScraping = async () => {
   } catch (error) {
     console.error(
       "Error occurred while scraping jobs:",
-      (error as Error).message,
+      (error as Error).message
     );
   }
 };

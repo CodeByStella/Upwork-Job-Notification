@@ -55,6 +55,8 @@ interface Config {
   ADMIN_ID: string;
   SUPPORT: string;
   SOURCE_URL: string;
+  PROXY: string | undefined;
+  PROXY_AUTH: { username: string; password: string } | undefined;
 }
 
 const config: Config = {
@@ -66,6 +68,8 @@ const config: Config = {
   ADMIN_ID: ADMIN_ID!,
   SUPPORT: SUPPORT!,
   SOURCE_URL: SOURCE_URL!,
+  PROXY: process.env.PROXY,
+  PROXY_AUTH: process.env.PROXY_AUTH ? JSON.parse(process.env.PROXY_AUTH) : undefined,
 };
 
 export default config;
