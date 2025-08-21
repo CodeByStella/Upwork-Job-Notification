@@ -196,7 +196,7 @@ const setup_commands = async (bot: Telegraf) => {
       if (scraping) return await ctx.reply("Scraping is already ongoing.");
 
       if (!canStart)
-        return await ctx.reply("Scraping is not allowed to start for now.");
+        return await ctx.reply("Scraping is not allowed to start for now. Please try again later.");
 
       await ctx.reply("🔍 Scraping started.");
       startScraping();
@@ -220,7 +220,7 @@ const setup_commands = async (bot: Telegraf) => {
 
       setTimeout(() => {
         canStart = true;
-      }, 60000);
+      }, 5000);
 
       await ctx.reply("🛑 Scraping stopped.");
       stopScraping();

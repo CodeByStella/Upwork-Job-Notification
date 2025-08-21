@@ -4,6 +4,7 @@ import config from "@/config";
 import processScrapedJob from "@/job.controller";
 import User from "@/models/User";
 import UserType from "@/types/user";
+import logError from "@/error.controller";
 
 let scraping = false;
 
@@ -142,6 +143,14 @@ async function login(page: PageWithCursor) {
     });
     await page.click("button#login_control_continue");
     console.log("🔓 Submitted login form");
+    await delay(10000);
+    let pgtitle= await page!.title();
+    console.log("Page title:", pgtitle, !pgtitle.toLocaleLowerCase().includes("login"));
+    if(!pgtitle.toLocaleLowerCase().includes("login")) {
+      await logError(`🤢 Login failed`);
+      console.error("Login failed");
+      throw new Error("Login failed");
+    }
   } catch (err) {
     console.error("Error in login:", (err as Error).message);
     throw err;
@@ -169,6 +178,7 @@ export async function scrapeJobs() {
       } catch (err) {
         console.error("Error closing browser:", (err as Error).message);
       }
+      break;
     }
 
     try {
