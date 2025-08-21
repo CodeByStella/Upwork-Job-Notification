@@ -143,12 +143,11 @@ async function login(page: PageWithCursor) {
     });
     await page.click("button#login_control_continue");
     console.log("🔓 Submitted login form");
-    await delay(15000);
+    await delay(20000);
     let pgtitle= await page!.title();
     console.log("Page title:", pgtitle, pgtitle.toLocaleLowerCase().includes("login"));
     if(pgtitle.toLocaleLowerCase().includes("login")) {
       await logError(`🤢 Login failed`);
-      console.error("Login failed");
       throw new Error("Login failed");
     }
   } catch (err) {
