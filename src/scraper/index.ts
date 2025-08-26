@@ -61,6 +61,9 @@ const useRealBrowser = async () => {
 
 async function autoAcceptCookies(page: PageWithCursor): Promise<void> {
   const selector = 'button[id="onetrust-accept-btn-handler"]';
+  const timeout = 20000;
+  const intervalMs = 1000;
+  let elapsed = 0;
 
   return new Promise((resolve) => {
     const interval = setInterval(async () => {
@@ -71,13 +74,24 @@ async function autoAcceptCookies(page: PageWithCursor): Promise<void> {
           await page.click(selector);
           clearInterval(interval);
           await delay(10000);
-          resolve(); // ✅ let the main code continue
+          resolve();
+        } else {
+          elapsed += intervalMs;
+          if (elapsed >= timeout) {
+            console.log("🍪 Accept cookies button not found after 5s. Skipping...");
+            clearInterval(interval);
+            resolve();
+          }
         }
       } catch (err) {
-        // silent
-        console.log((err as Error).message);
+        elapsed += intervalMs;
+        if (elapsed >= timeout) {
+          console.log("🍪 Accept cookies button not found after 5s. Skipping...");
+          clearInterval(interval);
+          resolve();
+        }
       }
-    }, 1000);
+    }, intervalMs);
   });
 }
 
