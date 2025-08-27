@@ -387,7 +387,7 @@ export async function scrapeJobs() {
               (err as Error).message
             );
           }
-          await delay(5000);
+          await delay(30000);
         } catch (err) {
           console.error("Error in user scraping loop:", (err as Error).message);
           continue;
