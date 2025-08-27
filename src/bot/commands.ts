@@ -76,7 +76,7 @@ const setup_commands = async (bot: Telegraf) => {
             ])
               .resize()
               .oneTime(),
-          },
+          }
         );
       } else {
         await ctx.reply(
@@ -90,7 +90,7 @@ const setup_commands = async (bot: Telegraf) => {
             ])
               .resize()
               .oneTime(),
-          },
+          }
         );
       }
     } catch (error) {
@@ -196,7 +196,9 @@ const setup_commands = async (bot: Telegraf) => {
       if (scraping) return await ctx.reply("Scraping is already ongoing.");
 
       if (!canStart)
-        return await ctx.reply("Scraping is not allowed to start for now. Please try again later.");
+        return await ctx.reply(
+          "Scraping is not allowed to start for now. Please try again later."
+        );
 
       await ctx.reply("🔍 Scraping started.");
       startScraping();
@@ -236,7 +238,7 @@ const setup_commands = async (bot: Telegraf) => {
         `${config.SOURCE_URL}\n*Please give me a star to repository.* ⭐️`,
         {
           parse_mode: "Markdown",
-        },
+        }
       );
     } catch (error) {
       console.error("Error in SOURCE_URL:", error);
@@ -328,7 +330,7 @@ const setup_commands = async (bot: Telegraf) => {
         "Thank you for your purchase!\nYou can use the bot for *one month* from now.",
         {
           parse_mode: "Markdown",
-        },
+        }
       );
 
       const userId = ctx.update.message.from.id;
@@ -395,12 +397,20 @@ const setup_commands = async (bot: Telegraf) => {
       const user = await User.findOne({ id: userId });
 
       if (user) {
+        let extra: any = undefined;
+
+        if (!isEmpty(user.searchUrl)) {
+          extra = Markup.inlineKeyboard([
+            Markup.button.url("Config URL", user.searchUrl),
+          ]);
+        }
         await ctx.reply(
-          `*Your subscription status*\n\n${user.isPremium ? "Premium 💎" : user.isTrial ? "Trial 🧪" : "No Subscription"}\n${user.notification ? "Notifications are enabled.🟢" : "Notifications are disabled.🔴"}${user.isPremium ? `\nSubscribed on ${formatDate(user.subscribed)}` : ""}\nConfig URL: ${user.searchUrl || "Not set"}
+          `*Your subscription status*\n\n${user.isPremium ? "Premium 💎" : user.isTrial ? "Trial 🧪" : "No Subscription"}\n${user.notification ? "Notifications are enabled.🟢" : "Notifications are disabled.🔴"}${user.isPremium ? `\nSubscribed on ${formatDate(user.subscribed)}` : ""}\nConfig URL: ${user.searchUrl ? "Click bellow 👇" : "Not set"}
           `,
           {
             parse_mode: "Markdown",
-          },
+            ...extra,
+          }
         );
       }
     } catch (error) {
