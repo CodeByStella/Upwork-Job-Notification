@@ -78,7 +78,9 @@ async function autoAcceptCookies(page: PageWithCursor): Promise<void> {
         } else {
           elapsed += intervalMs;
           if (elapsed >= timeout) {
-            console.log("🍪 Accept cookies button not found after 5s. Skipping...");
+            console.log(
+              "🍪 Accept cookies button not found after 5s. Skipping..."
+            );
             clearInterval(interval);
             resolve();
           }
@@ -86,7 +88,9 @@ async function autoAcceptCookies(page: PageWithCursor): Promise<void> {
       } catch (err) {
         elapsed += intervalMs;
         if (elapsed >= timeout) {
-          console.log("🍪 Accept cookies button not found after 5s. Skipping...");
+          console.log(
+            "🍪 Accept cookies button not found after 5s. Skipping..."
+          );
           clearInterval(interval);
           resolve();
         }
@@ -158,9 +162,13 @@ async function login(page: PageWithCursor) {
     await page.click("button#login_control_continue");
     console.log("🔓 Submitted login form");
     await delay(20000);
-    let pgtitle= await page!.title();
-    console.log("Page title:", pgtitle, pgtitle.toLocaleLowerCase().includes("login"));
-    if(pgtitle.toLocaleLowerCase().includes("login")) {
+    let pgtitle = await page!.title();
+    console.log(
+      "Page title:",
+      pgtitle,
+      pgtitle.toLocaleLowerCase().includes("login")
+    );
+    if (pgtitle.toLocaleLowerCase().includes("login")) {
       await logError(`🤢 Login failed`);
       throw new Error("Login failed");
     }
@@ -170,13 +178,14 @@ async function login(page: PageWithCursor) {
   }
 }
 
+let browser: Awaited<ReturnType<typeof useRealBrowser>>["browser"] | null =
+  null;
+let page: Awaited<ReturnType<typeof useRealBrowser>>["page"] | null = null;
+
 export async function scrapeJobs() {
   let iteration = 0;
   const RESTART_BROWSER_EVERY = 1000; // Restart browser every 1000 cycles to avoid memory leaks
 
-  let browser: Awaited<ReturnType<typeof useRealBrowser>>["browser"] | null =
-    null;
-  let page: Awaited<ReturnType<typeof useRealBrowser>>["page"] | null = null;
   let subscribedUsers: UserType[];
 
   while (true) {
@@ -275,6 +284,7 @@ export async function scrapeJobs() {
           //We detect page load by checking page title(Must start with "Upwork -")
           try {
             while (!pageTitle.startsWith("Upwork")) {
+              if (!scraping) break;
               pageTitle = await page!.title();
               console.log(`📝 Checking Page Title: ${pageTitle}`);
               await delay(1000);
@@ -287,6 +297,7 @@ export async function scrapeJobs() {
 
           //After page title is found, try to scrape with retries
           for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+            if (!scraping) break;
             try {
               const inputExists = await page!.$(
                 '[data-test="UpCInput"] input[type="search"]'
@@ -412,7 +423,7 @@ export const startScraping = async () => {
   }
 };
 
-export const stopScraping = () => {
+export const stopScraping = async () => {
   scraping = false;
 };
 
